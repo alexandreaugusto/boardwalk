@@ -18,6 +18,11 @@
         "symfony/browser-kit": "^3.0@dev",
         "symfony/css-selector": "^3.0@dev"
     },
+    "autoload": {
+        "psr-0": {
+            "App": "src/"
+        }
+    },
     "require": {
         "silex/silex": "~1.1",
         "symfony/console": "~2.3",
