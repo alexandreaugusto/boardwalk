@@ -5,6 +5,7 @@ require_once __DIR__.'/../vendor/autoload.php';
 use Silex\Provider\MonologServiceProvider;
 use App\XML\CPTECXMLParser;
 use App\XML\ClimatempoXMLParser;
+use App\JSON\INMETJSONParser;
 
 $app = new Silex\Application();
 
@@ -27,20 +28,20 @@ $capitaisCPTEC = array("Aracaju/SE" => 220, "Belém/PA" => 221, "Belo Horizonte/M
                 "Teresina/PI" => 245, "Vitória/ES" => 246);
 
 $capitaisINMET = array("Aracaju/SE" => 2800308, "Belém/PA" => 1501402, "Belo Horizonte/MG" => 3106200, "Boa Vista/RR" => 1400100, "Brasília/DF" => 5300108, "Campo Grande/MS" => 5002704,
-                "Cuiabá/MT" => 5103403, "Curitiba/PR" => 4106902, "Florianópolis/SC" => 4205407, "Fortaleza/CE" => 229, "Goiânia/GO" => 230, "João Pessoa/PB" => 231,
-                "Macapá/AP" => 232, "Maceió/AL" => 233, "Manaus/AM" => 234, "Natal/RN" => 235, "Palmas/TO" => 236, "Porto Alegre/RS" => 237, "Porto Velho/RO" => 238,
-                "Recife/PE" => 239, "Rio Branco/AC" => 240, "Rio de Janeiro/RJ" => 241, "Salvador/BA" => 242, "São Luís/MA" => 243, "São Paulo/SP" => 244,
-                "Teresina/PI" => 245, "Vitória/ES" => 246);
+                "Cuiabá/MT" => 5103403, "Curitiba/PR" => 4106902, "Florianópolis/SC" => 4205407, "Fortaleza/CE" => 2304400, "Goiânia/GO" => 5208707, "João Pessoa/PB" => 2507507,
+                "Macapá/AP" => 1600303, "Maceió/AL" => 2704302, "Manaus/AM" => 1302603, "Natal/RN" => 2408102, "Palmas/TO" => 1721000, "Porto Alegre/RS" => 4314902, "Porto Velho/RO" => 1100205,
+                "Recife/PE" => 2611606, "Rio Branco/AC" => 1200401, "Rio de Janeiro/RJ" => 3304557, "Salvador/BA" => 2927408, "São Luís/MA" => 2111300, "São Paulo/SP" => 3550308,
+                "Teresina/PI" => 2211001, "Vitória/ES" => 3205309);
 
 $app
-    ->match('/processar-dados', function () use ($app, $capitaisClimatempo, $capitaisCPTEC) {
+    ->match('/processar-dados', function () use ($app, $capitaisClimatempo, $capitaisCPTEC, $capitaisINMET) {
         $content = "<h1>Tempo</h1>";
         
         $content .= "<h2>Climatempo</h2>";
 
-        foreach ($capitaisClimatempo as $key => $value) {
-            $content .= "<h3>" . $key . "</h3>";
-            $climatempo = new ClimatempoXMLParser($value);
+        foreach ($capitaisClimatempo as $cidade => $codigo) {
+            $content .= "<h3>" . $cidade . "</h3>";
+            $climatempo = new ClimatempoXMLParser($codigo);
 
             foreach ($climatempo->getPrevisoes() as $p) {
                 $content .= $p->getDataPrevisao() . "<br>";
@@ -53,9 +54,24 @@ $app
         
         $content .= "<h2>CPTEC/INPE</h2>";
         
-        foreach ($capitaisCPTEC as $key => $value) {
-            $content .= "<h3>" . $key . "</h3>";
-            $cptec = new CPTECXMLParser($value);
+        foreach ($capitaisCPTEC as $cidade => $codigo) {
+            $content .= "<h3>" . $cidade . "</h3>";
+            $cptec = new CPTECXMLParser($codigo);
+
+            foreach ($cptec->getPrevisoes() as $p) {
+                $content .= $p->getDataPrevisao() . "<br>";
+                $content .= $p->getTMin() . " &deg;<br>";
+                $content .= $p->getTMax() . " &deg;<br>";
+                $content .= ($p->getChuva())?"Vai chover!":"Nao vai chover!";
+                $content .= "<br>";
+            }
+        }
+
+        $content .= "<h2>INMET</h2>";
+        
+        foreach ($capitaisINMET as $cidade => $codigo) {
+            $content .= "<h3>" . $cidade . "</h3>";
+            $cptec = new INMETJSONParser($codigo);
 
             foreach ($cptec->getPrevisoes() as $p) {
                 $content .= $p->getDataPrevisao() . "<br>";
