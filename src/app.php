@@ -6,6 +6,7 @@ use Silex\Provider\MonologServiceProvider;
 use App\XML\CPTECXMLParser;
 use App\XML\ClimatempoXMLParser;
 use App\JSON\INMETJSONParser;
+use App\XML\TempoAgoraXMLParser;
 
 $app = new Silex\Application();
 
@@ -39,6 +40,8 @@ $app
         
         $content .= "<h2>Climatempo</h2>";
 
+        $time_start = microtime(true);
+
         foreach ($capitaisClimatempo as $cidade => $codigo) {
             $content .= "<h3>" . $cidade . "</h3>";
             $climatempo = new ClimatempoXMLParser($codigo);
@@ -51,8 +54,14 @@ $app
                 $content .= "<br>";
             }
         }
+
+        $time_end = microtime(true);
+
+        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
         
         $content .= "<h2>CPTEC/INPE</h2>";
+
+        $time_start = microtime(true);
         
         foreach ($capitaisCPTEC as $cidade => $codigo) {
             $content .= "<h3>" . $cidade . "</h3>";
@@ -67,13 +76,19 @@ $app
             }
         }
 
+        $time_end = microtime(true);
+
+        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
+
         $content .= "<h2>INMET</h2>";
+
+        $time_start = microtime(true);
         
         foreach ($capitaisINMET as $cidade => $codigo) {
             $content .= "<h3>" . $cidade . "</h3>";
-            $cptec = new INMETJSONParser($codigo);
+            $inmet = new INMETJSONParser($codigo);
 
-            foreach ($cptec->getPrevisoes() as $p) {
+            foreach ($inmet->getPrevisoes() as $p) {
                 $content .= $p->getDataPrevisao() . "<br>";
                 $content .= $p->getTMin() . " &deg;<br>";
                 $content .= $p->getTMax() . " &deg;<br>";
@@ -81,6 +96,31 @@ $app
                 $content .= "<br>";
             }
         }
+
+        $time_end = microtime(true);
+
+        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
+
+        $content .= "<h2>Tempo Agora</h2>";
+
+        $time_start = microtime(true);
+        
+        foreach ($capitaisINMET as $cidade => $codigo) {
+            $content .= "<h3>" . $cidade . "</h3>";
+            $tempoAgora = new TempoAgoraXMLParser($cidade);
+
+            foreach ($tempoAgora->getPrevisoes() as $p) {
+                $content .= $p->getDataPrevisao() . "<br>";
+                $content .= $p->getTMin() . " &deg;<br>";
+                $content .= $p->getTMax() . " &deg;<br>";
+                $content .= ($p->getChuva())?"Vai chover!":"Nao vai chover!";
+                $content .= "<br>";
+            }
+        }
+
+        $time_end = microtime(true);
+
+        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
 
         return $content;
 
