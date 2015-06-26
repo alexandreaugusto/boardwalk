@@ -31,7 +31,7 @@ class BasicTest extends WebTestCase
 
         $this->assertTrue($client->getResponse()->isOk());
         $this->assertCount(1, $crawler->filter('h1:contains("Tempo")'));
-        $this->assertCount(2, $crawler->filter('h3:contains("Sao Paulo")'));
+        $this->assertCount(4, $crawler->filter('h3:contains("Manaus")'));
     }
 
 }

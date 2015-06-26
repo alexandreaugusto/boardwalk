@@ -26,14 +26,12 @@ class TempoAgoraXMLParser implements DataParser {
 
 	public function populateDadosPrevisao() {
 		$previsoes = array_slice(explode("\n", $this->desc[0]->description), 1, 4);
-		$cont = 0;
 		foreach($previsoes as $previsao) {
 			$p = new Previsao();
 			$forecastLine = explode(") - ", $previsao);
 			$p->setData(date("Y-m-d", strtotime(str_replace("/", "-", $this->rss->channel->lastBuildDate))));
 			$date = explode("/", strip_tags($forecastLine[0]));
-			$date = date("Y-m-d", mktime(0, 0, 0, filter_var($date[1], FILTER_SANITIZE_NUMBER_INT), abs(filter_var($date[0], FILTER_SANITIZE_NUMBER_INT)), date('Y')));
-			$p->setDataPrevisao($date);
+			$p->setDataPrevisao(date("Y-m-d", mktime(0, 0, 0, filter_var($date[1], FILTER_SANITIZE_NUMBER_INT), abs(filter_var($date[0], FILTER_SANITIZE_NUMBER_INT)), date('Y'))));
 			$dadosPrevisao = explode(" / ", substr($forecastLine[1], 0, strpos($forecastLine[1], '<')));
 			$p->setTMin(filter_var($dadosPrevisao[0], FILTER_SANITIZE_NUMBER_INT));
 			$p->setTMax(filter_var($dadosPrevisao[1], FILTER_SANITIZE_NUMBER_INT));

@@ -25,31 +25,26 @@ class INMETJSONParser implements DataParser {
 	}
 
 	public function populateDadosPrevisao() {
-		$cont = 0;
-		$periodos = array('manha', 'tarde', 'noite');
-		foreach ($this->json->{$this->codCidade} as $previsao) {
+		$periodos = array('manha', 'tarde', 'noite');$cont = 0;
+		foreach ($this->json->{$this->codCidade} as $dataPrevisao => $dados) {
+                        $cont++;
 			$p = new Previsao();
 			$p->setData(date("Y-m-d"));
-			$p->setDataPrevisao(date("Y-m-d", mktime(0, 0, 0, date('m'), intval(date('d')) + $cont++, date('Y'))));
+			$p->setDataPrevisao(date("Y-m-d", strtotime($dataPrevisao)));
 			$tMax = -1000000000;
 			$tMin = 1000000000;
 			$chuva = false;
 			if($cont < 3) {
 				for ($i=0;$i<count($periodos);$i++) {
-					$tMax = ($previsao->{$periodos[$i]}->temp_max > $tMax)?$previsao->{$periodos[$i]}->temp_max:$tMax;
-					$tMin = ($previsao->{$periodos[$i]}->temp_min < $tMin)?$previsao->{$periodos[$i]}->temp_min:$tMin;
-					if(strpos(strtolower($previsao->{$periodos[$i]}->resumo), 'chuv') !== false || strpos(strtolower($previsao->{$periodos[$i]}->tempo), 'chuv') !== false)
+					$tMax = ($dados->{$periodos[$i]}->temp_max > $tMax)?$dados->{$periodos[$i]}->temp_max:$tMax;
+					$tMin = ($dados->{$periodos[$i]}->temp_min < $tMin)?$dados->{$periodos[$i]}->temp_min:$tMin;
+					if(strpos(strtolower($dados->{$periodos[$i]}->resumo), 'chuv') !== false || strpos(strtolower($dados->{$periodos[$i]}->tempo), 'chuv') !== false)
 						$chuva = true;
 				}
-				$p->setTMin($tMin);
-				$p->setTMax($tMax);
-				$p->setChuva($chuva);
-			} else {
-				$p->setTMin($previsao->temp_min);
-				$p->setTMax($previsao->temp_max);
-				$p->setChuva((strpos(strtolower($previsao->resumo), 'chuv') !== false || strpos(strtolower($previsao->tempo), 'chuv') !== false));
 			}
-
+			$p->setTMin(($cont < 3)?$tMin:$dados->temp_min);
+			$p->setTMax(($cont < 3)?$tMax:$dados->temp_max);
+			$p->setChuva(($cont < 3)?$chuva:(strpos(strtolower($dados->resumo), 'chuv') !== false || strpos(strtolower($dados->tempo), 'chuv') !== false));
 			array_push($this->previsoes, $p);
 		}
 	}

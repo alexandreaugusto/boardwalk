@@ -3,7 +3,6 @@
 namespace App\Tests;
 
 use App\XML\ClimatempoXMLParser;
-use App\Model\Previsao;
 
 class TestClimatempoXMLParser extends \PHPUnit_Framework_TestCase {
 

@@ -27,8 +27,7 @@ class ClimatempoXMLParser implements DataParser {
 			$p = new Previsao();
 			$p->setData(date("Y-m-d"));
 			$dt = explode(" ", $previsao['data'])[0];
-			$dt = explode("/", $dt);
-			$tmp = strtotime($dt[1] . "/" . $dt[0]);
+			$tmp = strtotime(explode("/", $dt)[1] . "/" . explode("/", $dt)[0]);
 			$p->setDataPrevisao(date('Y-m-d', $tmp));
 			$p->setTMin($previsao['low']);
 			$p->setTMax($previsao['high']);
