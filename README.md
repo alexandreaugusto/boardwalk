@@ -1,18 +1,15 @@
 # boardwalk
 Final project of the Agile Design Software discipline.
 
-Follow the steps below in order to install this application
-==============
+### Follow the steps below in order to install this application
 
-System requirements
---------------
+#### System requirements
 
 - PHP 5.5.9 +
 - Composer
 - CUrl PHP Module
 
-Steps
---------------
+#### Steps
 
 Initially, run the command below to download needed third libraries
 
