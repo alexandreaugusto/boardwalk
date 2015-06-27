@@ -5,12 +5,12 @@ namespace App\Utils;
 class Utilidades {
 
 	/**
-	 * Faz uma requisi√ß√£o HTTP utilizando cURL
-	 * @param string $url A URL que ser√° recuperada
-	 * @param string $method O m√©todo HTTP que ser√° utilizado para recuperar (GET, POST, etc...)
-	 * @param array $data Matriz contendo os campos que ser√£o enviados com a requisi√ß√£o
-	 * @param array $headers Matriz contendo cabe√ßalhos HTTP
-	 * @return string O conte√∫do recuperado
+	 * Faz uma requisiÁ„o HTTP utilizando cURL
+	 * @param string $url A URL que ser· recuperada
+	 * @param string $method O mÈtodo HTTP que ser· utilizado para recuperar (GET, POST, etc...)
+	 * @param array $data Matriz contendo os campos que ser„o enviados com a requisiÁ„o
+	 * @param array $headers Matriz contendo cabeÁalhos HTTP
+	 * @return string O conte˙do recuperado
 	 */
 	public static function curl_get_contents( $url , array $data = array() , $method = 'GET' , array $headers = array() ){
 		$ret = null;
@@ -39,8 +39,8 @@ class Utilidades {
 				curl_close( $curl );
 
 				if ( $ern ) trigger_error( sprintf( 'cURL[ %d ]: %s' , $ern , $err ) , E_USER_ERROR );
-			} else trigger_error( 'cURL: N√£o foi poss√≠vel iniciar cURL' , E_USER_ERROR );
-		} else trigger_error( '√â necess√°rio ter cURL instalada.' , E_USER_ERROR );
+			} else trigger_error( 'cURL: N„o foi possÌvel iniciar cURL' , E_USER_ERROR );
+		} else trigger_error( '… necess·rio ter a extens„o cURL instalada.' , E_USER_ERROR );
 
 		return $ret;
 	}

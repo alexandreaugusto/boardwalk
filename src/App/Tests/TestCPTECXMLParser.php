@@ -22,6 +22,10 @@ class TestCPTECXMLParser extends \PHPUnit_Framework_TestCase {
 	public function previsaoDeHoje() {
 		$this->assertEquals(date('Y-m-d'), $this->xml->getPrevisoes()[0]->getData());
 	}
+        
+        public function testGetNumDiasPrevisao() {
+            $this->assertEquals(4, $this->xml->getNumDiasPrevisao());
+        }
 
 	public function testQuantidadeElementos() {
 		$this->assertCount(4, $this->xml->getPrevisoes());
