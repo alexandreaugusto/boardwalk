@@ -17,7 +17,7 @@ Initially, run the command below to download needed third libraries
 composer install
 ```
 
-After it, create your own .htaccess file to map the rewrite base of your application, like this, for example:
+After it, edit existing file web/.htaccess to map the rewrite base of your application, like this, for example:
 
     <IfModule mod_rewrite.c>
             Options -MultiViews
