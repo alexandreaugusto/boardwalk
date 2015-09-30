@@ -7,15 +7,27 @@ use App\XML\CPTECXMLParser;
 use App\XML\ClimatempoXMLParser;
 use App\JSON\INMETJSONParser;
 use App\XML\TempoAgoraXMLParser;
+use MYurasov\Silex\MongoDB\Provider\MongoClientProvider;
 
 $app = new Silex\Application();
 
-$app['debug'] = true;
 $app['charset'] = "iso-8859-1";
 
 $app->register(new MonologServiceProvider(), array(
-    'monolog.logfile' => sys_get_temp_dir() . '/dev.log'
+    'monolog.logfile' => sys_get_temp_dir() . '/previsoes-centros.log',
+    'monolog.level' => Monolog\Logger::INFO,
+    'monolog.name' => 'previsoes-centros'
 ));
+
+$app->register(new MongoClientProvider(), []);
+
+$app['mongodb.mongo_client_options'] = [
+    'server' => '',
+    'options' => [],
+    'driver_options' => []
+];
+
+$app['mongodb.db'] = 'weather';
 
 $capitaisClimatempo = array("Aracaju/SE" => 384, "Belém/PA" => 232, "Belo Horizonte/MG" => 107, "Boa Vista/RR" => 347, "Brasília/DF" => 61, "Campo Grande/MS" => 212,
                 "Cuiabá/MT" => 218, "Curitiba/PR" => 271, "Florianópolis/SC" => 377, "Fortaleza/CE" => 60, "Goiânia/GO" => 88, "João Pessoa/PB" => 256, "Macapá/AP" => 39,
@@ -36,93 +48,118 @@ $capitaisINMET = array("Aracaju/SE" => 2800308, "Belém/PA" => 1501402, "Belo Hor
 
 $app
     ->match('/processar-dados', function () use ($app, $capitaisClimatempo, $capitaisCPTEC, $capitaisINMET) {
-        $content = "<h1>Tempo</h1>";
-        
-        $content .= "<h2>Climatempo</h2>";
+
+        $cont = 0;
 
         $time_start = microtime(true);
 
-        foreach ($capitaisClimatempo as $cidade => $codigo) {
-            $content .= "<h3>" . $cidade . "</h3>";
-            $climatempo = new ClimatempoXMLParser($codigo);
+        try {
 
-            foreach ($climatempo->getPrevisoes() as $p) {
-                $content .= $p->getDataPrevisao() . "<br>";
-                $content .= $p->getTMin() . " &deg;<br>";
-                $content .= $p->getTMax() . " &deg;<br>";
-                $content .= ($p->getChuva())?"Vai chover!":"Nao vai chover!";
-                $content .= "<br>";
+            foreach ($capitaisClimatempo as $cidade => $codigo) {
+                $climatempo = new ClimatempoXMLParser($codigo);
+
+                $city = explode("/", $cidade);
+
+                foreach ($climatempo->getPrevisoes() as $p) {
+                    $app['mongodb.mongo_client']->selectCollection('weather', 'previsoes')->insert(array('cidade' => utf8_encode($city[0]), 'uf' => $city[1], 'centro_previsao' => 'Climatempo',
+    'data' => new \MongoDate(strtotime($p->getData())), 'data_prev' => new \MongoDate(strtotime($p->getDataPrevisao())),
+    'tmax' => new \MongoInt32($p->getTMax()), 'tmin' => new \MongoInt32($p->getTMin()), 'chuva' => $p->getChuva()));
+                    $cont++;
+                }
             }
+
+        } catch(\Exception $ex) {
+
+            $app['monolog']->addError("Erro na execucao do Climatempo: " . $ex->getMessage());
+
         }
 
         $time_end = microtime(true);
 
-        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
-        
-        $content .= "<h2>CPTEC/INPE</h2>";
+        $app['monolog']->addInfo("Tempo de processamento do climatempo: " . (($time_end - $time_start)/60));
 
         $time_start = microtime(true);
-        
-        foreach ($capitaisCPTEC as $cidade => $codigo) {
-            $content .= "<h3>" . $cidade . "</h3>";
-            $cptec = new CPTECXMLParser($codigo);
 
-            foreach ($cptec->getPrevisoes() as $p) {
-                $content .= $p->getDataPrevisao() . "<br>";
-                $content .= $p->getTMin() . " &deg;<br>";
-                $content .= $p->getTMax() . " &deg;<br>";
-                $content .= ($p->getChuva())?"Vai chover!":"Nao vai chover!";
-                $content .= "<br>";
+        try {
+        
+            foreach ($capitaisCPTEC as $cidade => $codigo) {
+                $cptec = new CPTECXMLParser($codigo);
+
+                $city = explode("/", $cidade);
+
+                foreach ($cptec->getPrevisoes() as $p) {
+                    $app['mongodb.mongo_client']->selectCollection('weather', 'previsoes')->insert(array('cidade' => utf8_encode($city[0]), 'uf' => $city[1], 'centro_previsao' => 'CPTEC',
+    'data' => new \MongoDate(strtotime($p->getData())), 'data_prev' => new \MongoDate(strtotime($p->getDataPrevisao())),
+    'tmax' => new \MongoInt32($p->getTMax()), 'tmin' => new \MongoInt32($p->getTMin()), 'chuva' => $p->getChuva()));
+                    $cont++;
+                }
             }
+
+        } catch(\Exception $ex) {
+
+            $app['monolog']->addError("Erro na execucao do CPTEC: " . $ex->getMessage());
+
         }
 
         $time_end = microtime(true);
 
-        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
-
-        $content .= "<h2>INMET</h2>";
+        $app['monolog']->addInfo("Tempo de processamento do CPTEC: " . (($time_end - $time_start)/60));
 
         $time_start = microtime(true);
-        
-        foreach ($capitaisINMET as $cidade => $codigo) {
-            $content .= "<h3>" . $cidade . "</h3>";
-            $inmet = new INMETJSONParser($codigo);
 
-            foreach ($inmet->getPrevisoes() as $p) {
-                $content .= $p->getDataPrevisao() . "<br>";
-                $content .= $p->getTMin() . " &deg;<br>";
-                $content .= $p->getTMax() . " &deg;<br>";
-                $content .= ($p->getChuva())?"Vai chover!":"Nao vai chover!";
-                $content .= "<br>";
+        try {
+        
+            foreach ($capitaisINMET as $cidade => $codigo) {
+                $inmet = new INMETJSONParser($codigo);
+
+                $city = explode("/", $cidade);
+
+                foreach ($inmet->getPrevisoes() as $p) {
+                    $app['mongodb.mongo_client']->selectCollection('weather', 'previsoes')->insert(array('cidade' => utf8_encode($city[0]), 'uf' => $city[1], 'centro_previsao' => 'INMET',
+    'data' => new \MongoDate(strtotime($p->getData())), 'data_prev' => new \MongoDate(strtotime($p->getDataPrevisao())),
+    'tmax' => new \MongoInt32($p->getTMax()), 'tmin' => new \MongoInt32($p->getTMin()), 'chuva' => $p->getChuva()));
+                    $cont++;
+                }
             }
+
+        } catch(\Exception $ex) {
+
+            $app['monolog']->addError("Erro na execucao do INMET: " . $ex->getMessage());
+
         }
 
         $time_end = microtime(true);
 
-        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
-
-        $content .= "<h2>Tempo Agora</h2>";
+        $app['monolog']->addInfo("Tempo de processamento do INMET: " . (($time_end - $time_start)/60));
 
         $time_start = microtime(true);
-        
-        foreach ($capitaisINMET as $cidade => $codigo) {
-            $content .= "<h3>" . $cidade . "</h3>";
-            $tempoAgora = new TempoAgoraXMLParser($cidade);
 
-            foreach ($tempoAgora->getPrevisoes() as $p) {
-                $content .= $p->getDataPrevisao() . "<br>";
-                $content .= $p->getTMin() . " &deg;<br>";
-                $content .= $p->getTMax() . " &deg;<br>";
-                $content .= ($p->getChuva())?"Vai chover!":"Nao vai chover!";
-                $content .= "<br>";
+        try {
+        
+            foreach ($capitaisINMET as $cidade => $codigo) {
+                $tempoAgora = new TempoAgoraXMLParser($cidade);
+
+                $city = explode("/", $cidade);
+
+                foreach ($tempoAgora->getPrevisoes() as $p) {
+                    $app['mongodb.mongo_client']->selectCollection('weather', 'previsoes')->insert(array('cidade' => utf8_encode($city[0]), 'uf' => $city[1], 'centro_previsao' => 'Somar',
+    'data' => new \MongoDate(strtotime($p->getData())), 'data_prev' => new \MongoDate(strtotime($p->getDataPrevisao())),
+    'tmax' => new \MongoInt32($p->getTMax()), 'tmin' => new \MongoInt32($p->getTMin()), 'chuva' => $p->getChuva()));
+                    $cont++;
+                }
             }
+
+        } catch(\Exception $ex) {
+
+            $app['monolog']->addError("Erro na execucao da Somar: " . $ex->getMessage());
+
         }
 
         $time_end = microtime(true);
 
-        $content .= "<br><b>" . (($time_end - $time_start)/60) . "</b><br>";
+        $app['monolog']->addInfo("Tempo de processamento da Somar: " . (($time_end - $time_start)/60));
 
-        return $content;
+        return 'ok-'.$cont;
 
     })
     ->method('GET|POST');
