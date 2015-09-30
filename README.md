@@ -14,7 +14,7 @@ Final project of the Agile Design Software discipline.
 Initially, run the command below to download needed third libraries
 
 ```
-composer install
+composer install|update
 ```
 
 After it, edit existing file web/.htaccess to map the rewrite base of your application, like this, for example:
