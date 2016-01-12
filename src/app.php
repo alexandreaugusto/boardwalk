@@ -7,6 +7,7 @@ use App\XML\CPTECXMLParser;
 use App\XML\ClimatempoXMLParser;
 use App\JSON\INMETJSONParser;
 use App\XML\TempoAgoraXMLParser;
+use App\XML\MetarXMLParser;
 use MYurasov\Silex\MongoDB\Provider\MongoClientProvider;
 
 $app = new Silex\Application();
@@ -45,6 +46,13 @@ $capitaisINMET = array("Aracaju/SE" => 2800308, "Belém/PA" => 1501402, "Belo Hor
                 "Macapá/AP" => 1600303, "Maceió/AL" => 2704302, "Manaus/AM" => 1302603, "Natal/RN" => 2408102, "Palmas/TO" => 1721000, "Porto Alegre/RS" => 4314902, "Porto Velho/RO" => 1100205,
                 "Recife/PE" => 2611606, "Rio Branco/AC" => 1200401, "Rio de Janeiro/RJ" => 3304557, "Salvador/BA" => 2927408, "São Luís/MA" => 2111300, "São Paulo/SP" => 3550308,
                 "Teresina/PI" => 2211001, "Vitória/ES" => 3205309);
+
+$capitaisMETAR = array("Aracaju/SE" => "SBAR", "Belém/PA" => "SBBE", "Belo Horizonte/MG" => "SBBH", "Boa Vista/RR" => "SBBV",
+                "Brasília/DF" => "SBBR", "Campo Grande/MS" => "SBCG", "Cuiabá/MT" => "SBCY", "Curitiba/PR" => "SBCT", "Florianópolis/SC" => "SBFL",
+                "Fortaleza/CE" => "SBFZ", "Goiânia/GO" => "SBGO", "João Pessoa/PB" => "SBJP", "Macapá/AP" => "SBMQ", "Maceió/AL" => "SBMO",
+                "Manaus/AM" => "SBMN", "Natal/RN" => "SBNT", "Palmas/TO" => "SBPJ", "Porto Alegre/RS" => "SBPA", "Porto Velho/RO" => "SBPV",
+                "Recife/PE" => "SBRF", "Rio Branco/AC" => "SBRB", "Rio de Janeiro/RJ" => "SBGL", "Salvador/BA" => "SBSV", "São Luís/MA" => "SBSL",
+                "São Paulo/SP" => "SBSP", "Teresina/PI" => "SBTE", "Vitória/ES" => "SBVT");
 
 $app
     ->match('/processar-dados', function () use ($app, $capitaisClimatempo, $capitaisCPTEC, $capitaisINMET) {
@@ -163,6 +171,50 @@ $app
 
     })
     ->method('GET|POST');
+
+    $app
+    ->get('/recuperar-metar', function () use ($app, $capitaisMETAR) {
+        $cont = 0;
+
+        $time_start = microtime(true);
+        $log = "";
+
+        try {
+
+            foreach ($capitaisMETAR as $cidade => $codigo) {
+                $city = explode("/", $cidade);
+                
+                $data_obs = new MetarXMLParser($codigo);
+                
+                $obs = $data_obs->getObservedData();
+                $data = \DateTime::createFromFormat('d/m/Y H:i:s', $obs->getDataObservacao());
+
+                $abc = $app['mongodb.mongo_client']->selectCollection('weather', 'observacoes')->find(array('cidade' => utf8_encode($city[0]), 'uf' => $city[1], 'tipo' => "METAR"))->sort(array('data_hora' => -1))->limit(1);
+
+                if($abc->hasNext()) {
+                    $abc->next();
+                    $temp = $abc->current();
+                    
+                    if($data->format('Y-m-d H:i:s') != date('Y-m-d H:i:s', explode(" ", $temp['data_hora'])[1])) {
+                        $app['mongodb.mongo_client']->selectCollection('weather', 'observacoes')->insert(array('cidade' => utf8_encode($city[0]), 'uf' => $city[1], 'tipo' => $obs->getTipo(),
+            'data_hora' => new \MongoDate(strtotime($data->format('Y-m-d H:i:s'))), 'temperatura' => new \MongoInt32($obs->getTemperatura()), 'condicao_tempo' => utf8_encode($obs->getCondicaoTempo())));
+                        $log .= $cidade . " - " . $codigo . " / " . $data->format('Y-m-d H:i:s') . " | ";
+                        $cont++;
+                    }
+                }
+            }
+
+        } catch(\Exception $ex) {
+
+            $app['monolog']->addError("Erro na execucao do METAR: " . $ex->getMessage());
+
+        }
+
+        if($log != "")
+            $app['monolog']->addInfo(utf8_encode($log));
+
+        return $cont;
+    });
 
 $app
     ->match('/', function () use ($app) {
