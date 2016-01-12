@@ -4,9 +4,9 @@ namespace App\XML;
 
 use App\Model\Previsao;
 use App\Exception\XMLVazioException;
-use App\DataParser;
+use App\ForecastDataParser;
 
-class CPTECXMLParser implements DataParser {
+class CPTECXMLParser implements ForecastDataParser {
 
 	private $xml;
 	private $previsoes = array();

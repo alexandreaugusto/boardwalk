@@ -4,10 +4,10 @@ namespace App\XML;
 
 use App\Model\Previsao;
 use App\Exception\XMLVazioException;
-use App\DataParser;
+use App\ForecastDataParser;
 use App\Utils\Utilidades;
 
-class ClimatempoXMLParser implements DataParser {
+class ClimatempoXMLParser implements ForecastDataParser {
 
 	private $xml;
 	private $previsoes = array();
